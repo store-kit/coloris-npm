@@ -10,7 +10,7 @@ return ((window, document, Math, undefined) => {
   const ctx = document.createElement('canvas').getContext('2d');
   const currentColor = { r: 0, g: 0, b: 0, h: 0, s: 0, v: 0, a: 1 };
   let container, picker, colorArea, colorMarker, colorPreview, colorValue, clearButton, closeButton,
-      hueSlider, hueMarker, alphaSlider, alphaMarker, currentEl, currentFormat, oldColor, keyboardNav,
+      hueSlider, hueMarker, alphaSlider, alphaMarker, eyeDropper, currentEl, currentFormat, oldColor, keyboardNav,
       colorAreaDims = {};
 
   // Default settings
@@ -36,6 +36,7 @@ return ((window, document, Math, undefined) => {
     clearLabel: 'Clear',
     closeButton: false,
     closeLabel: 'Close',
+    eyeDropper: false,
     onChange: () => undefined,
     a11y: {
       open: 'Open color picker',
@@ -232,6 +233,17 @@ return ((window, document, Math, undefined) => {
             colorValue.setAttribute('aria-label', settings.a11y.input);
             colorArea.setAttribute('aria-label', settings.a11y.instruction);
           }
+          break;
+        case 'eyeDropper':
+          if (options.eyeDropper && !window.EyeDropper) {
+              console.warn('EyeDropper API is not supported on this device.');
+  
+            break;
+          }
+  
+          settings.eyeDropper = !!options.eyeDropper;
+          picker.setAttribute('data-eye-dropper', settings.eyeDropper);
+  
           break;
         default:
           settings[key] = options[key];
@@ -964,6 +976,14 @@ return ((window, document, Math, undefined) => {
     }
   }
 
+  function openEyeDropper() {
+    const eyeDropper = new EyeDropper();
+    eyeDropper.open().then(result => {
+      setColorFromStr(result.sRGBHex);
+      pickColor();
+    }).catch(err => console.error(err));
+  }
+
   /**
    * Init the color picker.
    */
@@ -1006,7 +1026,8 @@ return ((window, document, Math, undefined) => {
       `<button type="button" id="clr-close" class="clr-close" aria-label="${settings.a11y.close}">${settings.closeLabel}</button>`+
     '</div>'+
     `<span id="clr-open-label" hidden>${settings.a11y.open}</span>`+
-    `<span id="clr-swatch-label" hidden>${settings.a11y.swatch}</span>`;
+    `<span id="clr-swatch-label" hidden>${settings.a11y.swatch}</span>`+
+    '<button id=\"clr-eye-dropper\" type=\"button\" class=\"clr-eye-dropper\"><svg xmlns=\"http:\/\/www.w3.org\/2000\/svg\" height=\"23\" viewBox=\"0 0 18 18\" width=\"23\"><rect id=\"Canvas\" fill=\"#ff13dc\" opacity=\"0\" width=\"18\" height=\"18\"><\/rect><path class=\"fill\" d=\"M11.2285,8.5185,4.116,15.631a1.2355,1.2355,0,0,1-1.7772-1.7168l.0302-.0302L9.4815,6.7715ZM14.864,1.053a1.79554,1.79554,0,0,0-1.273.5275L11.3285,3.843l-.707-.707a.5.5,0,0,0-.707,0L8.2335,4.8165a.5.5,0,0,0,0,.707l.5405.541L1.662,13.177a2.23516,2.23516,0,0,0,3.161,3.161l7.1125-7.112.541.5405a.5.5,0,0,0,.707,0L14.864,8.086a.5.5,0,0,0,.00039-.70711L14.864,7.3785l-.707-.707L16.4195,4.409a1.8,1.8,0,0,0,.00042-2.54558L16.4195,1.863l-.2825-.2825A1.796,1.796,0,0,0,14.864,1.053Z\"><\/path><\/svg><\/button>';
 
     // Append the color picker to the DOM
     document.body.appendChild(picker);
@@ -1022,6 +1043,7 @@ return ((window, document, Math, undefined) => {
     hueMarker = getEl('clr-hue-marker');
     alphaSlider = getEl('clr-alpha-slider');
     alphaMarker = getEl('clr-alpha-marker');
+    eyeDropper = getEl('clr-eye-dropper');
 
     // Bind the picker to the default selector
     bindFields(settings.el);
@@ -1158,6 +1180,7 @@ return ((window, document, Math, undefined) => {
     addListener(colorArea, 'click', moveMarker);
     addListener(hueSlider, 'input', setHue);
     addListener(alphaSlider, 'input', setAlpha);
+    addListener(eyeDropper, 'click', openEyeDropper);
   }
 
   /**
